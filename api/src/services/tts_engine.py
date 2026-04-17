@@ -236,8 +236,10 @@ def _postprocess_segment(raw_wav_bytes: bytes | None, target_sec: float,
     duration_ratio = raw_duration / target_sec
 
     if not alignment_enabled:
-        speed_factor = duration_ratio
-        speed_factor = max(_SPEED_MIN_LEGACY, min(_SPEED_MAX_LEGACY, speed_factor))
+        # Skip time-stretching entirely when alignment is disabled.  Otherwise
+        # pyrubberband.time_stretch is still invoked and fails on hosts where
+        # rubberband-cli is not available.  Pad/trim below keeps duration in sync.
+        speed_factor = 1.0
     elif duration_ratio < _STRETCH_SKIP_RATIO:
         # TTS is dramatically shorter than target — narrator was pausing.
         # Play at natural speed; silence padding below handles the gap.

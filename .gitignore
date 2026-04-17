@@ -167,6 +167,11 @@ output_logs/
 data/transcriptions/
 pipeline_data/
 
+# Local runtime snapshots / backups (never commit — can be huge)
+pipeline_data_backup*.tar.gz
+pipeline_data*.zip
+submission/
+
 # Django runtime (removed, kept for safety)
 whispers/
 

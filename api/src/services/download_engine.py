@@ -58,7 +58,16 @@ def download_video(url, destination_folder, filename=None):
         return str(save_path)
     print(f"Downloading: {title}...", end=" ", flush=True)
     ydl_opts = _yt_dlp_opts(
-        format="bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best",
+        # Prefer single-file (progressive) formats so ffmpeg is NOT required.
+        # Format 18 (360p mp4+m4a) is YouTube's classic progressive format —
+        # ffmpeg-free, cookie-free, n-sig-free.  Only fall back to streams
+        # that need merging if no progressive mp4 exists.
+        format=(
+            "best[ext=mp4]/"
+            "18/"
+            "best[ext=webm]/"
+            "best"
+        ),
         merge_output_format="mp4",
         outtmpl=str(pathlib.Path(destination_folder) / (safe_title + ".%(ext)s")),
     )
