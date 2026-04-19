@@ -394,6 +394,27 @@ image. On HPC or bare-metal hosts, install it via your package manager or
 Conda (`conda install -c conda-forge ffmpeg`). See the HPC guide for the
 user-space installation recipe.
 
+### Dubbed video plays without subtitles
+
+By design, this project ships subtitles as **side-car WebVTT files** rather
+than burning them into the video — the Next.js frontend renders them via
+`<track>` overlays. The `dubbed_captions/*.vtt` files are generated lazily
+on the first `GET /api/captions/{video_id}` request.
+
+If you only ran the pipeline up to *stitch* (no caption fetch happened),
+the `.vtt` files will be missing on disk. Generate them offline without
+restarting the stack:
+
+```bash
+python scripts/generate_vtt.py
+```
+
+This reads `pipeline_data/api/translations/argos/*.json` and writes
+`pipeline_data/api/dubbed_captions/<title>.vtt` (translated) and
+`<title>.original.vtt` (source language). Open the dubbed `.mp4` in VLC
+with the `.vtt` next to it (same base name, same folder) — VLC will pick
+up the subtitle track automatically.
+
 ---
 
 ## Credits
