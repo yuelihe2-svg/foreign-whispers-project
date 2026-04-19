@@ -1,0 +1,43 @@
+# Docker Compose overlay for Windows / macOS Docker Desktop.
+#
+# Usage (Windows / macOS, no GPU):
+#   docker compose -f docker-compose.yml -f docker-compose.windows.yml \
+#                  --profile cpu up -d api frontend
+#
+# Why we need this:
+#   `network_mode: host` (used in the base compose) only works on Linux.
+#   On Docker Desktop for Windows / macOS the API and Frontend containers
+#   start fine but their ports are unreachable from the host.
+#
+# Why this is non-trivial: the Next.js frontend rewrites `/api/*` to
+# `${API_URL}/api/*`, but Next.js standalone mode bakes the destination
+# at build time. So `localhost:8080` is hard-coded into the production
+# bundle. To avoid rebuilding, we put the frontend on the *same network
+# namespace* as the api container — that way its `localhost:8080`
+# really is the api server.
+#
+# This file is intentionally NOT named `docker-compose.override.yml` so
+# Docker doesn't auto-load it on HPC / Linux GPU hosts (which would break
+# the existing host-networking setup).
+services:
+  api:
+    network_mode: !reset null
+    networks:
+      - fw-net
+    ports:
+      - "8080:8080"
+      - "8501:8501"   # frontend port published via api (since they share the namespace)
+
+  frontend:
+    # Share the api container's network namespace. Frontend's localhost:8080
+    # is now the api process; localhost:8501 is the frontend itself.
+    network_mode: "service:api"
+    # Network/ports keys are invalid alongside service-mode networking.
+    networks: !reset null
+    ports: !reset null
+    depends_on:
+      - api
+
+networks:
+  fw-net:
+    driver: bridge

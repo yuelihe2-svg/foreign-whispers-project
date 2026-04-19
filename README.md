@@ -150,11 +150,54 @@ docker compose --profile nvidia logs -f api
 
 ---
 
+## Local Demo (Windows / macOS Docker Desktop, no GPU)
+
+If you don't have an NVIDIA GPU but want to **demo cached results** that
+were already produced on the HPC (or Quick-Start path), you can bring up
+just the API + Frontend on Docker Desktop:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.windows.yml \
+               --profile cpu up -d api frontend
+```
+
+Then open <http://localhost:8501>. Pre-existing artifacts under
+`pipeline_data/api/` are served as-is; clicking **Start Pipeline** on a
+video that already has cache will trace through all 5 stages in ~2 seconds
+(every stage is idempotent and short-circuits when its artifact exists).
+
+> **Important caveats**
+>
+> - Do *not* click **Start Pipeline** on a video that has *no* cache —
+>   Whisper / argos will run on CPU, saturate the API container, and make
+>   it look frozen for many minutes.
+> - The Whisper STT and Chatterbox TTS containers (`--profile nvidia`)
+>   are intentionally **not** launched here. CPU TTS is not supported.
+> - `docker-compose.windows.yml` is a layered overlay (not an auto-loaded
+>   `override.yml`) on purpose, so HPC / Linux GPU hosts are unaffected.
+
+A placeholder `cookies.txt` (a valid but empty Netscape cookies file) is
+required in the project root because Docker bind-mounts it into the API
+container. Copy the provided template:
+
+```bash
+cp cookies.txt.example cookies.txt
+```
+
+Without this file, Docker auto-creates a *directory* at the mount target
+and `yt-dlp` errors with *"Is a directory: '/app/cookies.txt'"*. The empty
+placeholder works fine for public videos; only age-restricted or
+private content needs real cookies. `cookies.txt` is gitignored so any
+real session cookies you paste in won't be committed.
+
+---
+
 ## Deployment Options
 
 | Target                                         | Guide                                                                              |
 |------------------------------------------------|------------------------------------------------------------------------------------|
 | Local workstation with NVIDIA GPU              | *Quick Start* above                                                                |
+| Local Windows / macOS Docker Desktop, no GPU   | *Local Demo* above (cache-only, demos pre-processed videos)                        |
 | HPC cluster (Slurm + Apptainer)                | [`docs/deployment/hpc.md`](docs/deployment/hpc.md)                                 |
 | Pure library work (alignment, evaluation)      | *Development → Local setup (no Docker)* below                                      |
 
